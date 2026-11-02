@@ -1,3 +1,4 @@
+
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import androidx.annotation.NonNull;
@@ -7,53 +8,74 @@ import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 public class Shooter {
-    private DcMotor shooterMotor;
+    private DcMotorEx shooterMotor;
     private CRServo feederServo;
-    public Shooter(HardwareMap hardwareMap) {
-        shooterMotor = hardwareMap.get(DcMotor.class, "");
-        feederServo = hardwareMap.get(CRServo.class, "");
 
+    public Shooter(HardwareMap hardwareMap) {
+        shooterMotor = hardwareMap.get(DcMotorEx.class, "flywheel_motor");
+        feederServo = hardwareMap.get(CRServo.class, "intake_servo");
+
+        shooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooterMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(2.0, 0.5, 0.0, 11.1));
         shooterMotor.setPower(0.0);
+
+        feederServo.setDirection(DcMotorSimple.Direction.REVERSE);
         feederServo.setPower(0.0);
     }
 
     public class MaintainVelocity implements Action {
-        private double percentageOfVelocity;
-        private int duration;
-        public MaintainVelocity(int duration, double percentageOfVelocity) {
-            this.percentageOfVelocity = percentageOfVelocity;
-            this.duration = duration;
-            shooterMotor.setPower(0.0);
-            shooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        private SleepAction timer;
+        private double power;
+
+        public MaintainVelocity(int duration, double power) {
+            this.power = power;
+            timer = new SleepAction(duration);
         }
 
         @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-            shooterMotor.setPower(percentageOfVelocity);
-            new SleepAction(duration).run(telemetryPacket);
+        public boolean run(@NonNull TelemetryPacket packet) {
+            shooterMotor.setPower(this.power);
+
+            if (timer.run(packet)) {
+                packet.put("Power Draw:", shooterMotor.getCurrent(CurrentUnit.MILLIAMPS));
+                packet.put("Velocity:", shooterMotor.getVelocity());
+                return true;
+            }
+
             shooterMotor.setPower(0.0);
             return false;
         }
     }
 
-    private Action maintainVelocity(int duration, double percentageOfMaxVelocity) {
-        return new MaintainVelocity(duration, percentageOfMaxVelocity);
+    public Action maintainVelocity(int duration, double power) {
+        return new MaintainVelocity(duration, power);
     }
 
     public class RunFeeder implements Action {
-        private int duration;
+        private final SleepAction timer;
+
         public RunFeeder(int duration) {
-            this.duration = duration;
+            timer = new SleepAction(duration);
             feederServo.setPower(0.0);
         }
 
         @Override
-        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+        public boolean run(@NonNull TelemetryPacket packet) {
             feederServo.setPower(1.0);
-            new SleepAction(duration).run(telemetryPacket);
+
+            if (timer.run(packet)) {
+                return true;
+            }
+
             feederServo.setPower(0.0);
             return false;
         }
@@ -63,4 +85,36 @@ public class Shooter {
         return new RunFeeder(duration);
     }
 
-}
+
+    public class ChargeAndShoot implements Action {
+        public double speed;
+        public ChargeAndShoot(double ticksPerSecond) {
+            this.speed = ticksPerSecond;
+        }
+
+        @Override
+        public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+            telemetryPacket.put("Power Draw:", shooterMotor.getCurrent(CurrentUnit.MILLIAMPS));
+            telemetryPacket.put("Velocity:", shooterMotor.getVelocity());
+            shooterMotor.setVelocity(speed);
+            if (Math.abs(shooterMotor.getVelocity() - speed) < 20) {
+                feederServo.setPower(1.0);
+            }
+
+            if (feederServo.getPower() == 1.0) {
+                if (Math.abs(shooterMotor.getVelocity() - speed) > 200) {
+                    shooterMotor.setPower(0.0);
+                    feederServo.setPower(0.0);
+                    return false;
+                }
+                return true;
+            }
+
+            return true;
+        }
+    }
+
+    public Action chargeAndShoot(double ticksPerSecond) {
+        return new ChargeAndShoot(ticksPerSecond);
+    }
+ }

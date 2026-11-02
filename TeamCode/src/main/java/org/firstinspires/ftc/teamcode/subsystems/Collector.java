@@ -17,9 +17,9 @@ public class Collector {
     CRServo rightFlowerServo;
 
     public Collector(HardwareMap hardwareMap) {
-        intakeMotor = hardwareMap.get(DcMotor.class, "");
-        leftFlowerServo = hardwareMap.get(CRServo.class, "");
-        rightFlowerServo = hardwareMap.get(CRServo.class, "");
+        intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
+        leftFlowerServo = hardwareMap.get(CRServo.class, "left_intake_servo");
+        rightFlowerServo = hardwareMap.get(CRServo.class, "right_intake_servo");
 
         intakeMotor.setPower(0.0);
         leftFlowerServo.setPower(0.0);
