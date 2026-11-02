@@ -1,11 +1,9 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.roadrunner.PinpointDrive;
-import org.firstinspires.ftc.teamcode.subsystems.Collector;
-import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 public class Robot {
     private Shooter shooter;

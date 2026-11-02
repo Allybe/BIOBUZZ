@@ -45,6 +45,14 @@ public class Collector {
         return new Intake(duration);
     }
 
+    public void intake(boolean enabled) {
+        if (enabled) {
+            intakeMotor.setPower(1.0);
+        } else {
+            intakeMotor.setPower(0.0);
+        }
+    }
+
     public class IntakeFlower implements Action {
         private final int seconds;
         public IntakeFlower(int seconds) {
@@ -67,5 +75,17 @@ public class Collector {
                 new IntakeFlower(duration),
                 intake(duration)
         );
+    }
+
+    public void intakeFlower(boolean enabled) {
+        if (enabled) {
+            intakeMotor.setPower(1.0);
+            leftFlowerServo.setPower(1.0);
+            rightFlowerServo.setPower(1.0);
+        } else {
+            intakeMotor.setPower(0.0);
+            leftFlowerServo.setPower(0.0);
+            rightFlowerServo.setPower(0.0);
+        }
     }
 }
